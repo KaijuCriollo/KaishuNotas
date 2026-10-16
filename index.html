@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121311">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kaishu">
+<title>Kaishu Notas</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#121311;
+    --surface:#1D1F1C;
+    --surface-2:#262924;
+    --line:#30332D;
+    --text:#ECEDE8;
+    --muted:#A3A59E;
+    --accent:#8EA6FF;
+    --accent-ink:#0E1430;
+    --old:#F2A777;
+    --old-bg:rgba(242,167,119,.16);
+    --done:#6FD39A;
+    --done-ink:#0C2416;
+    --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-t:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    font-size:16px;line-height:1.35;
+    overscroll-behavior-y:none;
+  }
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer}
+
+  /* Fondo personalizado */
+  .bg,.shade{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .bg{background-size:cover;background-position:center;display:none}
+  .shade{background:#000;opacity:0;display:none}
+  body.has-bg .bg,body.has-bg .shade{display:block}
+  body.has-bg .card{background:rgba(29,31,28,.72);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+  body.has-bg .composer{background:rgba(18,19,17,.78);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+
+  .app{position:relative;z-index:1;max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+
+  header{padding:calc(var(--safe-t) + 28px) 20px 8px;display:flex;flex-direction:column;gap:14px}
+  .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .date{font-size:14px;color:var(--muted);margin-bottom:2px}
+  h1{margin:0;font-size:32px;font-weight:700;letter-spacing:-.5px;text-shadow:0 1px 12px rgba(0,0,0,.35)}
+  .icon-btn{width:44px;height:44px;flex:none;border:1px solid var(--line);border-radius:14px;background:rgba(29,31,28,.7);display:flex;align-items:center;justify-content:center}
+  .progress-row{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:6px}
+  .bar>div{height:100%;width:0;border-radius:999px;background:var(--done);transition:width .35s ease}
+
+  main{flex:1;padding:10px 20px calc(110px + var(--safe-b));display:flex;flex-direction:column;gap:22px}
+  section{display:flex;flex-direction:column;gap:10px}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 2px}
+  h2{margin:0;font-size:13px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+  .sec-old h2{color:var(--old)}
+  .sec-done h2{color:var(--done)}
+  .sec-meta{font-size:12px;color:var(--muted)}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:14px;animation:in .2s ease}
+  @keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .check{width:30px;height:30px;flex:none;border-radius:9px;border:2px solid #7D8078;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;position:relative}
+  .check::after{content:"";position:absolute;inset:-8px}
+  .sec-old .check{border-color:var(--old)}
+  .text{flex:1;min-width:0;word-wrap:break-word;overflow-wrap:anywhere}
+  .badge{flex:none;font-size:12px;font-weight:700;color:var(--old);background:var(--old-bg);border-radius:999px;padding:4px 9px;white-space:nowrap}
+
+  .done-item{background:transparent;border-color:transparent;padding:6px 6px}
+  body.has-bg .done-item{background:rgba(18,19,17,.45);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .done-item .check{background:var(--done);border-color:var(--done);color:var(--done-ink)}
+  .done-item .text{color:var(--muted);text-decoration:line-through}
+
+  .empty{text-align:center;padding:48px 16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted)}
+  .empty strong{color:var(--text);font-size:18px;font-weight:500}
+
+  .composer{position:fixed;left:0;right:0;bottom:0;z-index:2;background:var(--bg);border-top:1px solid var(--line);padding:12px 16px calc(12px + var(--safe-b))}
+  .composer form{max-width:528px;margin:0 auto;display:flex;gap:8px}
+  .composer input{flex:1;min-width:0;height:50px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);padding:0 16px;font-size:16px}
+  .composer input::placeholder{color:#8A8D85}
+  .composer input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .add{width:50px;height:50px;flex:none;border:0;border-radius:14px;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center}
+
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  /* Ajustes */
+  dialog{border:0;padding:0;background:transparent;color:var(--text);max-width:none;width:100%;margin:auto 0 0;inset:auto 0 0 0}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  .sheet{background:var(--surface);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:10px 20px calc(20px + var(--safe-b));max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .grab{width:40px;height:5px;border-radius:999px;background:var(--line);margin:0 auto 4px}
+  .sheet h3{margin:0;font-size:20px}
+  .preview{height:120px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;overflow:hidden;position:relative}
+  .preview .pshade{position:absolute;inset:0;background:#000}
+  .row-btns{display:flex;gap:10px}
+  .btn{flex:1;height:48px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);font-weight:500}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+  .btn:disabled{opacity:.45}
+  .range label{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin-bottom:8px}
+  input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+  .hint{font-size:13px;color:var(--muted);margin:0}
+
+  .toast{position:fixed;left:50%;bottom:calc(92px + var(--safe-b));transform:translateX(-50%) translateY(10px);opacity:0;z-index:5;background:#ECEDE8;color:#121311;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:500;transition:.2s;pointer-events:none;max-width:calc(100% - 32px)}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg" id="bg"></div>
+<div class="shade" id="shade"></div>
+
+<div class="app">
+  <header>
+    <div class="top">
+      <div>
+        <div class="date" id="date"></div>
+        <h1>Kaishu Notas</h1>
+      </div>
+      <button class="icon-btn" id="openSettings" aria-label="Ajustes de fondo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-5-5L5 21"></path></svg>
+      </button>
+    </div>
+    <div>
+      <div class="progress-row"><span id="progressLabel"></span><span id="pct"></span></div>
+      <div class="bar" role="progressbar" aria-label="Progreso del día" aria-valuemin="0" aria-valuemax="100" id="barWrap"><div id="bar"></div></div>
+    </div>
+  </header>
+
+  <main id="list"></main>
+</div>
+
+<div class="composer">
+  <form id="form" autocomplete="off">
+    <label for="nuevo" class="sr">Nuevo pendiente</label>
+    <input id="nuevo" placeholder="Anotar algo…" maxlength="200" enterkeyhint="done">
+    <button class="add" type="submit" aria-label="Agregar pendiente">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    </button>
+  </form>
+</div>
+
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <div class="sheet">
+    <div class="grab" aria-hidden="true"></div>
+    <h3 id="settingsTitle">Fondo</h3>
+    <div class="preview" id="preview"><div class="pshade" id="pshade"></div><span id="previewTxt" style="position:relative">Sin imagen</span></div>
+    <div class="row-btns">
+      <button class="btn primary" id="pickBtn" type="button">Elegir imagen</button>
+      <button class="btn" id="removeBtn" type="button">Quitar</button>
+    </div>
+    <div class="range">
+      <label for="dim"><span>Oscurecer imagen</span><span id="dimVal"></span></label>
+      <input type="range" id="dim" min="0" max="85" step="5">
+    </div>
+    <p class="hint">La imagen y tus pendientes se guardan solo en este teléfono.</p>
+    <button class="btn" id="closeSettings" type="button">Listo</button>
+  </div>
+</dialog>
+<input type="file" id="file" accept="image/*" class="sr" tabindex="-1" aria-hidden="true">
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const KEY = 'kaishu.items.v1', BG = 'kaishu.bg', DIM = 'kaishu.dim';
+  const $ = (id) => document.getElementById(id);
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const daysBetween = (a, b) => {
+    const [y1, m1, d1] = a.split('-').map(Number), [y2, m2, d2] = b.split('-').map(Number);
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+  };
+
+  let items = [];
+  try { items = JSON.parse(store.get(KEY, '[]')) || []; } catch (e) { items = []; }
+
+  function save() { if (!store.set(KEY, JSON.stringify(items))) toast('No se pudo guardar en este teléfono'); }
+
+  // Lo que se completó en un día anterior se limpia solo
+  function cleanup() {
+    const t = today(), n = items.length;
+    items = items.filter((i) => !i.doneOn || i.doneOn >= t);
+    if (items.length !== n) save();
+  }
+
+  function renderDate() {
+    const s = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()).replace(',', '');
+    $('date').textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  const checkSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>';
+
+  function row(item, kind, t) {
+    const li = document.createElement('li');
+    li.className = 'card' + (kind === 'done' ? ' done-item' : '');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'check';
+    b.setAttribute('aria-label', kind === 'done' ? 'Desmarcar: ' + item.text : 'Marcar como hecho: ' + item.text);
+    if (kind === 'done') b.innerHTML = checkSvg;
+    b.addEventListener('click', () => toggle(item.id));
+    const span = document.createElement('span');
+    span.className = 'text';
+    span.textContent = item.text;
+    li.append(b, span);
+    if (kind === 'old') {
+      const d = daysBetween(item.created, t);
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = d === 1 ? 'desde ayer' : 'hace ' + d + ' días';
+      li.append(badge);
+    }
+    return li;
+  }
+
+  function section(cls, title, meta, list, kind, t) {
+    const s = document.createElement('section');
+    s.className = cls;
+    const h = document.createElement('div');
+    h.className = 'sec-head';
+    h.innerHTML = '<h2></h2><span class="sec-meta"></span>';
+    h.querySelector('h2').textContent = title;
+    h.querySelector('.sec-meta').textContent = meta;
+    const ul = document.createElement('ul');
+    list.forEach((i) => ul.append(row(i, kind, t)));
+    s.append(h, ul);
+    return s;
+  }
+
+  function render() {
+    cleanup();
+    renderDate();
+    const t = today();
+    const pending = items.filter((i) => !i.doneOn);
+    const old = pending.filter((i) => i.created < t).sort((a, b) => a.created.localeCompare(b.created) || a.id - b.id);
+    const fresh = pending.filter((i) => i.created >= t).sort((a, b) => a.id - b.id);
+    const done = items.filter((i) => i.doneOn).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+
+    const total = pending.length + done.length;
+    const pct = total ? Math.round(done.length * 100 / total) : 0;
+    $('progressLabel').textContent = total ? done.length + ' de ' + total + ' hechos hoy' : 'Sin pendientes';
+    $('pct').textContent = pct + '%';
+    $('bar').style.width = pct + '%';
+    $('barWrap').setAttribute('aria-valuenow', pct);
+
+    const main = $('list');
+    main.replaceChildren();
+    if (old.length) main.append(section('sec-old', 'Arrastrados', String(old.length), old, 'old', t));
+    if (fresh.length) main.append(section('sec-new', old.length ? 'Nuevos' : 'Para hoy', String(fresh.length), fresh, 'new', t));
+    if (!pending.length) {
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.innerHTML = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#6FD39A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg><strong>' + (done.length ? '¡Todo hecho por hoy!' : 'Nada pendiente') + '</strong><span>' + (done.length ? 'Bien ahí.' : 'Anotá abajo lo que no te querés olvidar.') + '</span>';
+      main.append(e);
+    }
+    if (done.length) main.append(section('sec-done', 'Hechos hoy', 'se limpian mañana', done, 'done', t));
+  }
+
+  function toggle(id) {
+    const it = items.find((i) => i.id === id);
+    if (!it) return;
+    if (it.doneOn) { it.doneOn = null; it.doneAt = null; }
+    else { it.doneOn = today(); it.doneAt = Date.now(); if (navigator.vibrate) navigator.vibrate(12); }
+    save(); render();
+  }
+
+  $('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const inp = $('nuevo');
+    const text = inp.value.trim();
+    if (!text) return;
+    items.push({ id: Date.now(), text, created: today(), doneOn: null, doneAt: null });
+    save(); render();
+    inp.value = '';
+    inp.focus();
+  });
+
+  // ----- Fondo -----
+  function applyBg() {
+    const data = store.get(BG, '');
+    const dim = Number(store.get(DIM, '45'));
+    document.body.classList.toggle('has-bg', !!data);
+    $('bg').style.backgroundImage = data ? 'url("' + data + '")' : 'none';
+    $('shade').style.opacity = dim / 100;
+    $('preview').style.backgroundImage = data ? 'url("' + data + '")' : 'none';
+    $('pshade').style.opacity = data ? dim / 100 : 0;
+    $('previewTxt').style.display = data ? 'none' : '';
+    $('dim').value = dim;
+    $('dimVal').textContent = dim + '%';
+    $('dim').disabled = !data;
+    $('removeBtn').disabled = !data;
+  }
+
+  async function useImage(file) {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      // Se achica y comprime para que entre en el almacenamiento del navegador
+      for (const [max, q] of [[1600, 0.82], [1280, 0.75], [960, 0.7], [720, 0.65]]) {
+        const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.naturalWidth * s);
+        c.height = Math.round(img.naturalHeight * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        if (store.set(BG, c.toDataURL('image/jpeg', q))) { applyBg(); toast('Fondo actualizado'); return; }
+      }
+      toast('No entró la imagen, probá con otra');
+    } catch (e) {
+      toast('No pude abrir esa imagen');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  const dlg = $('settings');
+  $('openSettings').addEventListener('click', () => { applyBg(); dlg.showModal ? dlg.showModal() : dlg.setAttribute('open', ''); });
+  $('closeSettings').addEventListener('click', () => dlg.close ? dlg.close() : dlg.removeAttribute('open'));
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  $('pickBtn').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', (e) => { useImage(e.target.files[0]); e.target.value = ''; });
+  $('removeBtn').addEventListener('click', () => { store.del(BG); applyBg(); toast('Fondo quitado'); });
+  $('dim').addEventListener('input', (e) => { store.set(DIM, e.target.value); applyBg(); });
+
+  // ----- Toast -----
+  let tt;
+  function toast(msg) {
+    const el = $('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(tt);
+    tt = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // Si la app queda abierta de un día para el otro, se actualiza al volver
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+
+  applyBg();
+  render();
+
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
