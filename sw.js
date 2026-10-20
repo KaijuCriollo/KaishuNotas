@@ -1,5 +1,5 @@
 // Kaishu Notas — service worker: red primero (para ver siempre la última versión), caché si no hay conexión.
-const CACHE = 'kaishu-v4';
+const CACHE = 'kaishu-v5';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
