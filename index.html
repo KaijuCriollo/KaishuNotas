@@ -77,9 +77,16 @@
 
   /* Portada */
   .cover{flex:1;padding:8px 20px calc(28px + var(--safe-b));display:flex;flex-direction:column;gap:22px}
-  .big{display:flex;align-items:baseline;gap:12px;margin-top:20px}
-  .big strong{font-size:96px;line-height:1;font-weight:700;letter-spacing:-3px}
-  .big span{font-size:20px;color:var(--muted)}
+  .big{display:flex;align-items:baseline;gap:10px;margin-top:12px}
+  .big strong{font-size:52px;line-height:1;font-weight:700;letter-spacing:-1.5px}
+  .big span{font-size:18px;color:var(--muted)}
+  .fold{border-radius:16px;background:rgba(29,31,28,var(--card-a));border:1px solid rgba(255,255,255,.1);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .fold summary{list-style:none;min-height:52px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-weight:500}
+  .fold summary::-webkit-details-marker{display:none}
+  .fold summary svg{transition:transform .2s;flex:none}
+  .fold[open] summary svg{transform:rotate(180deg)}
+  .fold .cover-list{padding:4px 16px 16px;font-size:16px}
+  .fold.is-empty{display:none}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{font-size:14px;font-weight:500;border-radius:999px;padding:7px 12px;background:rgba(29,31,28,.6);border:1px solid rgba(255,255,255,.1)}
   .chip.old{color:var(--old)}
@@ -180,7 +187,10 @@
       <div class="cover">
         <div class="big"><strong id="bigNum">0</strong><span id="bigLbl">pendientes</span></div>
         <div class="chips" id="chips"></div>
-        <ul class="cover-list" id="coverList"></ul>
+        <details class="fold" id="fold">
+          <summary><span id="foldLbl">Ver pendientes</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></summary>
+          <ul class="cover-list" id="coverList"></ul>
+        </details>
         <button class="hint-swipe" type="button" data-go="1">
           Deslizá para ver y editar
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
@@ -374,12 +384,7 @@
       li.textContent = '+ ' + (pending.length - MAX) + ' más';
       cl.append(li);
     }
-    if (!pending.length) {
-      const li = document.createElement('li');
-      li.className = 'more';
-      li.textContent = done.length ? '¡Todo hecho por hoy! Bien ahí.' : 'Nada pendiente.';
-      cl.append(li);
-    }
+    $('fold').classList.toggle('is-empty', !pending.length);
 
     // Lista
     const total = pending.length + done.length;
@@ -529,6 +534,11 @@
     clearTimeout(tt);
     tt = setTimeout(() => el.classList.remove('show'), 2200);
   }
+
+  // El desplegable recuerda si lo dejaste abierto o cerrado (arranca cerrado)
+  const fold = $('fold');
+  fold.open = store.get('kaishu.fold', '0') === '1';
+  fold.addEventListener('toggle', () => store.set('kaishu.fold', fold.open ? '1' : '0'));
 
   document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
 
